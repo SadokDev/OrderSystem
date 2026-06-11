@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Orders.Api.Contracts;
 using Orders.Api.Data;
@@ -11,12 +12,18 @@ public static class OrdersEndpoints
     {
         app.MapPost("/orders", async (
             CreateOrderRequest request,
-            ApplicationDbContext db) =>
+            ApplicationDbContext db,
+            IPublishEndpoint publishEndpoint) =>
         {
             var order = new Order(request.CustomerName, request.TotalAmount);
 
             db.Orders.Add(order);
             await db.SaveChangesAsync();
+            
+            await publishEndpoint.Publish(new OrderCreated(
+                order.Id,
+                order.CustomerName,
+                order.TotalAmount));
 
             return Results.Created($"/orders/{order.Id}", order);
         });

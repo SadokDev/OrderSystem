@@ -1,8 +1,7 @@
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
-using Orders.Api.Contracts;
 using Orders.Api.Data;
 using Orders.Api.Entities;
+using OrderSystem.Contracts;
 
 namespace Orders.Api.Endpoints;
 

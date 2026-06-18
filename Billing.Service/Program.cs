@@ -1,6 +1,15 @@
+using Billing.Service.Consumers;
+using Billing.Service.Data;
 using MassTransit;
+using Microsoft.EntityFrameworkCore;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.AddDbContext<BillingDbContext>(options =>
+{
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("BillingDb"));
+});
 
 builder.Services.AddMassTransit(x =>
 {
@@ -12,6 +21,12 @@ builder.Services.AddMassTransit(x =>
         {
             h.Username("guest");
             h.Password("guest");
+        });
+
+        // 🔥 RETRY POLICY HERE
+        cfg.UseMessageRetry(r =>
+        {
+            r.Interval(3, TimeSpan.FromSeconds(2));
         });
 
         cfg.ReceiveEndpoint("billing-service", e =>

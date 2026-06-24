@@ -20,26 +20,25 @@ public class OrderCreatedConsumer : IConsumer<OrderCreated>
 
         Console.WriteLine($"💳 Processing Order {messageId}");
 
-        try
+        // 1. Idempotence check (DB-level safety)
+        var alreadyProcessed = await _db.ProcessedMessages
+            .AnyAsync(x => x.OrderId == messageId);
+
+        if (alreadyProcessed)
         {
-            // 1. Persist idempotence marker FIRST
-            _db.ProcessedMessages.Add(new ProcessedMessage
-            {
-                OrderId = messageId,
-                ProcessedAt = DateTime.UtcNow
-            });
-
-            await _db.SaveChangesAsync();
-
-            Console.WriteLine($"✅ Order {messageId} saved in DB");
-
-            // 2. CRASH AFTER COMMIT (simulate real-world failure)
-            throw new Exception("💥 Crash AFTER SaveChanges (simulated failure)");
-        }
-        catch (DbUpdateException)
-        {
-            Console.WriteLine("⚠️ Duplicate message detected (idempotent skip)");
+            Console.WriteLine($"⚠️ Duplicate skipped {messageId}");
             return;
         }
+
+        // 2. Persist idempotence marker
+        _db.ProcessedMessages.Add(new ProcessedMessage
+        {
+            OrderId = messageId,
+            ProcessedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync();
+
+        Console.WriteLine($"✅ Order {messageId} processed successfully");
     }
 }

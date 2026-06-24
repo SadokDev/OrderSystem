@@ -1,6 +1,5 @@
-namespace Orders.Api.Contracts;
+namespace Orders.Api;
 
 public record CreateOrderRequest(
     string CustomerName,
-    decimal TotalAmount
-);
+    decimal TotalAmount);

@@ -23,10 +23,13 @@ builder.Services.AddMassTransit(x =>
             h.Password("guest");
         });
 
-        // 🔥 RETRY POLICY HERE
         cfg.UseMessageRetry(r =>
         {
-            r.Interval(3, TimeSpan.FromSeconds(2));
+            r.Exponential(
+                retryLimit: 5,
+                minInterval: TimeSpan.FromSeconds(1),
+                maxInterval: TimeSpan.FromSeconds(30),
+                intervalDelta: TimeSpan.FromSeconds(5));
         });
 
         cfg.ReceiveEndpoint("billing-service", e =>

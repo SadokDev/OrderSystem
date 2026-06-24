@@ -16,9 +16,12 @@ public class OrderCreatedConsumer : IConsumer<OrderCreated>
 
     public async Task Consume(ConsumeContext<OrderCreated> context)
     {
-        var messageId = context.Message.OrderId;
+        var message = context.Message;
 
-        Console.WriteLine($"💳 Processing Order {messageId}");
+        Console.WriteLine(
+            $"[CorrelationId: {message.CorrelationId}] Processing Order {message.OrderId}");
+
+        var messageId = message.OrderId;
 
         // 1. Idempotence check (DB-level safety)
         var alreadyProcessed = await _db.ProcessedMessages
@@ -26,7 +29,8 @@ public class OrderCreatedConsumer : IConsumer<OrderCreated>
 
         if (alreadyProcessed)
         {
-            Console.WriteLine($"⚠️ Duplicate skipped {messageId}");
+            Console.WriteLine(
+                $"[CorrelationId: {message.CorrelationId}] Duplicate skipped {messageId}");
             return;
         }
 
@@ -39,6 +43,7 @@ public class OrderCreatedConsumer : IConsumer<OrderCreated>
 
         await _db.SaveChangesAsync();
 
-        Console.WriteLine($"✅ Order {messageId} processed successfully");
+        Console.WriteLine(
+            $"[CorrelationId: {message.CorrelationId}] Processed Order {messageId} successfully");
     }
 }

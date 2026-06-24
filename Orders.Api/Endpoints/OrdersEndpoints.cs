@@ -15,14 +15,18 @@ public static class OrdersEndpoints
             IPublishEndpoint publishEndpoint) =>
         {
             var order = new Order(request.CustomerName, request.TotalAmount);
-
+            var correlationId = Guid.NewGuid();
+            
             db.Orders.Add(order);
+            Console.WriteLine($"[API] CorrelationId = {correlationId}");
+            
             await db.SaveChangesAsync();
             
             await publishEndpoint.Publish(new OrderCreated(
                 order.Id,
                 order.CustomerName,
-                order.TotalAmount));
+                order.TotalAmount,
+                correlationId));
 
             return Results.Created($"/orders/{order.Id}", order);
         });

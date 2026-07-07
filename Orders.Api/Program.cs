@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Orders.Api.Data;
 using Orders.Api.Endpoints;
 using MassTransit;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +27,19 @@ builder.Services.AddMassTransit(x =>
 });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource =>
+    {
+        resource.AddService("orders-api");
+    })
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation()
+            .AddSource("MassTransit")
+            .AddConsoleExporter();
+    });
 
 var app = builder.Build();
 

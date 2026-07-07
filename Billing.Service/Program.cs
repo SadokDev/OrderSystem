@@ -2,6 +2,8 @@ using Billing.Service.Consumers;
 using Billing.Service.Data;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -38,6 +40,18 @@ builder.Services.AddMassTransit(x =>
         });
     });
 });
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource =>
+    {
+        resource.AddService("billing-service");
+    })
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddSource("MassTransit")
+            .AddConsoleExporter();
+    });
 
 builder.Services.AddMassTransitHostedService();
 

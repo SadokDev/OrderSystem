@@ -12,13 +12,16 @@ public static class OrdersEndpoints
         app.MapPost("/orders", async (
             CreateOrderRequest request,
             ApplicationDbContext db,
-            IPublishEndpoint publishEndpoint) =>
+            IPublishEndpoint publishEndpoint,
+            ILogger<Program> logger) =>
         {
             var order = new Order(request.CustomerName, request.TotalAmount);
             var correlationId = Guid.NewGuid();
             
             db.Orders.Add(order);
-            Console.WriteLine($"[API] CorrelationId = {correlationId}");
+            logger.LogInformation(
+                "Creating Order with CorrelationId {CorrelationId}",
+                correlationId);
             
             await db.SaveChangesAsync();
             

@@ -8,21 +8,22 @@ namespace Billing.Service.Consumers;
 public class OrderCreatedConsumer : IConsumer<OrderCreated>
 {
     private readonly BillingDbContext _db;
+    private readonly ILogger<OrderCreatedConsumer> _logger;
 
-    public OrderCreatedConsumer(BillingDbContext db)
+    public OrderCreatedConsumer(BillingDbContext db, ILogger<OrderCreatedConsumer>  logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task Consume(ConsumeContext<OrderCreated> context)
     {
         var message = context.Message;
-        
-        Console.WriteLine(
-            $"[Header CorrelationId: {context.CorrelationId}]");
 
-        Console.WriteLine(
-            $"[CorrelationId: {message.CorrelationId}] Processing Order {message.OrderId}");
+        _logger.LogInformation(
+            "Processing Order {OrderId} with CorrelationId {CorrelationId}",
+            message.OrderId,
+            context.CorrelationId);
 
         var messageId = message.OrderId;
 
@@ -32,8 +33,10 @@ public class OrderCreatedConsumer : IConsumer<OrderCreated>
 
         if (alreadyProcessed)
         {
-            Console.WriteLine(
-                $"[CorrelationId: {message.CorrelationId}] Duplicate skipped {messageId}");
+            _logger.LogWarning(
+                "Duplicate Order detected {OrderId} with CorrelationId {CorrelationId}",
+                messageId,
+                context.CorrelationId);
             return;
         }
 
@@ -46,7 +49,9 @@ public class OrderCreatedConsumer : IConsumer<OrderCreated>
 
         await _db.SaveChangesAsync();
 
-        Console.WriteLine(
-            $"[CorrelationId: {message.CorrelationId}] Processed Order {messageId} successfully");
+        _logger.LogInformation(
+            "Order {OrderId} processed successfully with CorrelationId {CorrelationId}",
+            messageId,
+            context.CorrelationId);
     }
 }

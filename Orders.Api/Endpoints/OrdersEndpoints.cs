@@ -22,11 +22,16 @@ public static class OrdersEndpoints
             
             await db.SaveChangesAsync();
             
-            await publishEndpoint.Publish(new OrderCreated(
-                order.Id,
-                order.CustomerName,
-                order.TotalAmount,
-                correlationId));
+            await publishEndpoint.Publish(
+                new OrderCreated(
+                    order.Id,
+                    order.CustomerName,
+                    order.TotalAmount,
+                    correlationId),
+                context =>
+                {
+                    context.CorrelationId = correlationId;
+                });
 
             return Results.Created($"/orders/{order.Id}", order);
         });

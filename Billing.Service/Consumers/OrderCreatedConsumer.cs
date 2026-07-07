@@ -17,6 +17,9 @@ public class OrderCreatedConsumer : IConsumer<OrderCreated>
     public async Task Consume(ConsumeContext<OrderCreated> context)
     {
         var message = context.Message;
+        
+        Console.WriteLine(
+            $"[Header CorrelationId: {context.CorrelationId}]");
 
         Console.WriteLine(
             $"[CorrelationId: {message.CorrelationId}] Processing Order {message.OrderId}");

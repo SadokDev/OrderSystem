@@ -11,100 +11,337 @@ It is designed to demonstrate real backend engineering concepts:
 - Idempotency
 - Retry and resilience strategies
 - Dead Letter Queue (DLQ)
-- Basic observability using CorrelationId
+- Distributed observability and tracing
+- Cloud-native deployment concepts
 
-The goal is not complexity, but clear understanding of distributed systems behavior.
+The goal is not complexity, but a clear understanding of distributed systems behavior.
+
+The project focuses on backend engineering challenges:
+
+> Building reliable services that communicate asynchronously in a distributed environment.
 
 ---
 
-## 🧱 Architecture
+# 🧱 Architecture
 
-Orders.Api → RabbitMQ → Billing.Service → PostgreSQL
+```text
+                    OrderCreated Event
+
+Orders.Api  ------------------------------> RabbitMQ
+    |                                         |
+    |                                         |
+    |                                         ▼
+    |                                Billing.Service
+    |
+    ▼
+PostgreSQL                              PostgreSQL
+(orders db)                            (billing db)
+```
 
 ---
 
-## ⚙️ Tech Stack
+# ⚙️ Tech Stack
 
 - .NET 10
+- ASP.NET Core Minimal API
 - MassTransit
 - RabbitMQ
 - PostgreSQL
 - Entity Framework Core
 - Docker Compose
+- OpenTelemetry
 
 ---
 
-## 🧠 Key Concepts Implemented
+# 🧠 Key Concepts Implemented
 
-### 📡 Event-driven architecture
-- Orders.Api publishes `OrderCreated` events
-- Billing.Service consumes events asynchronously
+## 📡 Event-driven architecture
 
-### 🔁 At-least-once delivery
-- Messages may be delivered more than once
-- System is designed to handle duplicates safely
+Implemented using MassTransit and RabbitMQ.
 
-### 🧾 Idempotency
-- Implemented using `ProcessedMessages` table
-- Ensures each order is processed only once
+Flow:
 
-### 🔄 Retry strategy
-- Exponential backoff retry policy via MassTransit
-- Handles transient infrastructure failures
+- `Orders.Api` creates orders
+- `Orders.Api` publishes `OrderCreated` events
+- `Billing.Service` consumes events asynchronously
 
-### ☠️ Dead Letter Queue (DLQ)
-- Failed messages are routed to `billing-service_error`
-- Allows inspection of poison messages
-
-### 🔍 Observability (basic)
-- CorrelationId generated in Orders.Api
-- Propagated through message payload
-- Used in Billing.Service logs to trace execution flow
+Services are decoupled through messaging.
 
 ---
 
-## 📦 Services
+## 🔁 At-least-once delivery
 
-### Orders.Api
+The system assumes that messages can be delivered more than once.
+
+This reflects real distributed messaging behavior:
+
+- network failures can happen
+- consumers can restart
+- messages can be redelivered
+
+The consumer is designed to handle duplicates safely.
+
+---
+
+## 🧾 Idempotency
+
+Implemented using a `ProcessedMessages` table.
+
+The consumer checks whether an order has already been processed.
+
+Current strategy:
+
+```text
+OrderId uniqueness
+        +
+ProcessedMessages persistence
+```
+
+This guarantees safe message reprocessing.
+
+---
+
+## 🔄 Retry strategy
+
+Implemented with MassTransit retry middleware.
+
+Current configuration:
+
+- exponential backoff
+- multiple retry attempts
+- transient failure handling
+
+Example:
+
+```text
+Failure
+   |
+Retry 1
+   |
+Retry 2
+   |
+Retry 3
+   |
+Success or Dead Letter Queue
+```
+
+---
+
+## ☠️ Dead Letter Queue (DLQ)
+
+Failed messages are routed to an error queue.
+
+Current behavior:
+
+```text
+billing-service
+        |
+        |
+        X
+        |
+        ▼
+billing-service_error
+```
+
+This allows inspection of poison messages.
+
+---
+
+# 🔍 Observability
+
+Implemented using OpenTelemetry.
+
+Current capabilities:
+
+- Structured application logging using `Microsoft ILogger`
+- HTTP request tracing in `Orders.Api`
+- MassTransit message tracing
+- TraceId propagation through RabbitMQ
+- Service identification using OpenTelemetry resources
+
+Services:
+
+```text
+orders-api
+billing-service
+```
+
+Distributed tracing flow:
+
+```text
+HTTP Request
+
+    |
+    |
+    ▼
+
+Orders.Api
+TraceId: X
+
+    |
+    |
+    ▼
+
+RabbitMQ
+
+    |
+    |
+    ▼
+
+Billing.Service
+TraceId: X
+```
+
+The project initially implemented a manual `CorrelationId` mechanism to understand distributed context propagation.
+
+The system now also uses native distributed tracing concepts:
+
+- TraceId
+- SpanId
+- OpenTelemetry Activity model
+
+---
+
+# 📦 Services
+
+## Orders.Api
+
+Responsibilities:
+
 - Exposes `POST /orders`
-- Creates orders in PostgreSQL
-- Generates a CorrelationId per request
-- Publishes `OrderCreated` event to RabbitMQ
+- Persists orders in PostgreSQL
+- Publishes `OrderCreated` events
+- Provides OpenTelemetry HTTP tracing
 
-### Billing.Service
+---
+
+## Billing.Service
+
+Responsibilities:
+
 - Consumes `OrderCreated` events
-- Ensures idempotent processing
-- Persists processed messages in PostgreSQL
-- Logs CorrelationId for traceability
+- Handles duplicate messages safely
+- Persists processed messages
+- Provides MassTransit tracing
+- Logs processing activity
 
 ---
 
-## 🔄 Message Flow
+# 🔄 Message Flow
 
+```text
 POST /orders
-→ Orders.Api (CorrelationId generated)
-→ RabbitMQ (OrderCreated event)
-→ Billing.Service (consumer)
-→ PostgreSQL (ProcessedMessages stored)
+
+      |
+      ▼
+
+Orders.Api
+
+      |
+      | OrderCreated event
+      |
+      ▼
+
+RabbitMQ
+
+      |
+      ▼
+
+Billing.Service
+
+      |
+      ▼
+
+ProcessedMessages PostgreSQL table
+```
+
+Distributed trace:
+
+```text
+TraceId
+
+Orders.Api
+    |
+    |
+RabbitMQ
+    |
+    |
+Billing.Service
+```
 
 ---
 
-## 🚀 Current Status
+# 🐳 Local Infrastructure
 
-- Event-driven architecture implemented and working
-- RabbitMQ messaging configured
-- PostgreSQL persistence working
-- Idempotency fully implemented
-- Retry policy with exponential backoff enabled
-- Dead Letter Queue active
-- CorrelationId propagation implemented (basic observability)
-- End-to-end flow validated
+Docker Compose provides:
+
+- RabbitMQ with management UI
+- PostgreSQL orders database
+- PostgreSQL billing database
+
+Local development environment:
+
+```text
+Docker Compose
+       |
+       |
+       +-- RabbitMQ
+       |
+       +-- PostgreSQL Orders DB
+       |
+       +-- PostgreSQL Billing DB
+```
 
 ---
 
-## 📌 Next Steps
+# 🚀 Current Status
 
-- Replace manual CorrelationId propagation with MassTransit headers
-- Introduce structured logging (Serilog or equivalent)
-- Improve observability with lightweight distributed tracing
-- Prepare Kubernetes deployment (local cluster)
+Implemented:
+
+✅ Event-driven architecture  
+✅ RabbitMQ messaging  
+✅ MassTransit integration  
+✅ PostgreSQL persistence  
+✅ Idempotent consumer  
+✅ Retry policy  
+✅ Dead Letter Queue  
+✅ CorrelationId propagation  
+✅ OpenTelemetry integration  
+✅ Distributed TraceId propagation between services  
+✅ Service identification for tracing
+
+The system currently demonstrates production-like distributed backend concepts.
+
+---
+
+# 📌 Next Steps
+
+## Observability improvements
+
+- Add local tracing visualization
+- Introduce OpenTelemetry Collector
+- Add Jaeger or another tracing backend
+
+## Messaging reliability
+
+- Implement Outbox Pattern
+- Improve transactional consistency between database changes and event publishing
+
+## Advanced resilience
+
+- Timeout policies
+- Circuit breaker patterns
+- Fault handling strategies
+
+## Kubernetes deployment
+
+Final deployment phase:
+
+- Container images
+- Kubernetes Deployments
+- Services (ClusterIP)
+- ConfigMaps
+- Secrets
+- Health checks
+- Local Kubernetes cluster
+

@@ -2,6 +2,7 @@ using Billing.Service.Consumers;
 using Billing.Service.Data;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -50,7 +51,13 @@ builder.Services.AddOpenTelemetry()
     {
         tracing
             .AddSource("MassTransit")
-            .AddConsoleExporter();
+            .AddConsoleExporter()
+            .AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri("http://localhost:4318/v1/traces");
+                options.Protocol = OtlpExportProtocol.HttpProtobuf;
+                options.ExportProcessorType = OpenTelemetry.ExportProcessorType.Simple;
+            });
     });
 
 builder.Services.AddMassTransitHostedService();

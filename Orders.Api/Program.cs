@@ -4,6 +4,7 @@ using Orders.Api.Endpoints;
 using MassTransit;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using OpenTelemetry.Exporter;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +39,13 @@ builder.Services.AddOpenTelemetry()
         tracing
             .AddAspNetCoreInstrumentation()
             .AddSource("MassTransit")
-            .AddConsoleExporter();
+            .AddConsoleExporter()
+            .AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri("http://localhost:4318/v1/traces");
+                options.Protocol = OtlpExportProtocol.HttpProtobuf;
+                options.ExportProcessorType = OpenTelemetry.ExportProcessorType.Simple;
+            });
     });
 
 var app = builder.Build();

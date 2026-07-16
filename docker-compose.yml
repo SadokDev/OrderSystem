@@ -21,6 +21,22 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+      
+  jaeger:
+    image: jaegertracing/jaeger:2.11.0
+    container_name: ordersystem-jaeger
+    ports:
+      - "16686:16686"
+    
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.130.0
+    container_name: ordersystem-otel-collector
+    command: [ "--config=/etc/otelcol-contrib/config.yaml" ]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
 
 volumes:
   postgres-data:

@@ -6,13 +6,13 @@ This project simulates a production-like distributed backend system using .NET a
 
 It is designed to demonstrate real backend engineering concepts:
 
-- Event-driven architecture
-- At-least-once delivery
-- Idempotency
-- Retry and resilience strategies
-- Dead Letter Queue (DLQ)
-- Distributed observability and tracing
-- Cloud-native deployment concepts
+* Event-driven architecture
+* At-least-once delivery
+* Idempotency
+* Retry and resilience strategies
+* Dead Letter Queue (DLQ)
+* Distributed observability and tracing
+* Cloud-native deployment concepts
 
 The goal is not complexity, but a clear understanding of distributed systems behavior.
 
@@ -36,20 +36,33 @@ Orders.Api  ------------------------------> RabbitMQ
     ▼
 PostgreSQL                              PostgreSQL
 (orders db)                            (billing db)
+
+
+Distributed tracing:
+
+Orders.Api
+    |
+    |
+OpenTelemetry Collector
+    |
+    |
+Jaeger
 ```
 
 ---
 
 # ⚙️ Tech Stack
 
-- .NET 10
-- ASP.NET Core Minimal API
-- MassTransit
-- RabbitMQ
-- PostgreSQL
-- Entity Framework Core
-- Docker Compose
-- OpenTelemetry
+* .NET 10
+* ASP.NET Core Minimal API
+* MassTransit
+* RabbitMQ
+* PostgreSQL
+* Entity Framework Core
+* Docker Compose
+* OpenTelemetry
+* OpenTelemetry Collector
+* Jaeger
 
 ---
 
@@ -61,9 +74,9 @@ Implemented using MassTransit and RabbitMQ.
 
 Flow:
 
-- `Orders.Api` creates orders
-- `Orders.Api` publishes `OrderCreated` events
-- `Billing.Service` consumes events asynchronously
+* `Orders.Api` creates orders
+* `Orders.Api` publishes `OrderCreated` events
+* `Billing.Service` consumes events asynchronously
 
 Services are decoupled through messaging.
 
@@ -75,9 +88,9 @@ The system assumes that messages can be delivered more than once.
 
 This reflects real distributed messaging behavior:
 
-- network failures can happen
-- consumers can restart
-- messages can be redelivered
+* network failures can happen
+* consumers can restart
+* messages can be redelivered
 
 The consumer is designed to handle duplicates safely.
 
@@ -107,9 +120,9 @@ Implemented with MassTransit retry middleware.
 
 Current configuration:
 
-- exponential backoff
-- multiple retry attempts
-- transient failure handling
+* exponential backoff
+* multiple retry attempts
+* transient failure handling
 
 Example:
 
@@ -153,11 +166,12 @@ Implemented using OpenTelemetry.
 
 Current capabilities:
 
-- Structured application logging using `Microsoft ILogger`
-- HTTP request tracing in `Orders.Api`
-- MassTransit message tracing
-- TraceId propagation through RabbitMQ
-- Service identification using OpenTelemetry resources
+* Structured application logging using `Microsoft ILogger`
+* HTTP request tracing in `Orders.Api`
+* MassTransit message tracing
+* Distributed TraceId propagation through RabbitMQ
+* Service identification using OpenTelemetry resources
+* Local trace visualization using Jaeger
 
 Services:
 
@@ -176,29 +190,36 @@ HTTP Request
     ▼
 
 Orders.Api
+
 TraceId: X
 
     |
     |
     ▼
 
-RabbitMQ
+RabbitMQ / MassTransit
 
     |
     |
     ▼
 
 Billing.Service
+
 TraceId: X
 ```
 
-The project initially implemented a manual `CorrelationId` mechanism to understand distributed context propagation.
+The project initially implemented a manual `CorrelationId` mechanism to understand business-level message correlation.
 
 The system now also uses native distributed tracing concepts:
 
-- TraceId
-- SpanId
-- OpenTelemetry Activity model
+* TraceId
+* SpanId
+* OpenTelemetry Activity model
+
+CorrelationId and TraceId serve different purposes:
+
+* `CorrelationId` identifies the business operation and message flow
+* `TraceId` identifies the technical distributed execution flow
 
 ---
 
@@ -208,10 +229,10 @@ The system now also uses native distributed tracing concepts:
 
 Responsibilities:
 
-- Exposes `POST /orders`
-- Persists orders in PostgreSQL
-- Publishes `OrderCreated` events
-- Provides OpenTelemetry HTTP tracing
+* Exposes `POST /orders`
+* Persists orders in PostgreSQL
+* Publishes `OrderCreated` events
+* Provides OpenTelemetry HTTP and MassTransit tracing
 
 ---
 
@@ -219,11 +240,11 @@ Responsibilities:
 
 Responsibilities:
 
-- Consumes `OrderCreated` events
-- Handles duplicate messages safely
-- Persists processed messages
-- Provides MassTransit tracing
-- Logs processing activity
+* Consumes `OrderCreated` events
+* Handles duplicate messages safely
+* Persists processed messages
+* Provides MassTransit consumer tracing
+* Logs processing activity
 
 ---
 
@@ -263,7 +284,7 @@ TraceId
 Orders.Api
     |
     |
-RabbitMQ
+MassTransit / RabbitMQ
     |
     |
 Billing.Service
@@ -275,9 +296,11 @@ Billing.Service
 
 Docker Compose provides:
 
-- RabbitMQ with management UI
-- PostgreSQL orders database
-- PostgreSQL billing database
+* RabbitMQ with management UI
+* PostgreSQL orders database
+* PostgreSQL billing database
+* OpenTelemetry Collector
+* Jaeger tracing backend
 
 Local development environment:
 
@@ -290,6 +313,10 @@ Docker Compose
        +-- PostgreSQL Orders DB
        |
        +-- PostgreSQL Billing DB
+       |
+       +-- OpenTelemetry Collector
+       |
+       +-- Jaeger
 ```
 
 ---
@@ -298,16 +325,18 @@ Docker Compose
 
 Implemented:
 
-✅ Event-driven architecture  
-✅ RabbitMQ messaging  
-✅ MassTransit integration  
-✅ PostgreSQL persistence  
-✅ Idempotent consumer  
-✅ Retry policy  
-✅ Dead Letter Queue  
-✅ CorrelationId propagation  
-✅ OpenTelemetry integration  
-✅ Distributed TraceId propagation between services  
+✅ Event-driven architecture
+✅ RabbitMQ messaging
+✅ MassTransit integration
+✅ PostgreSQL persistence
+✅ Idempotent consumer
+✅ Retry policy
+✅ Dead Letter Queue
+✅ CorrelationId propagation
+✅ OpenTelemetry integration
+✅ OpenTelemetry Collector integration
+✅ Jaeger tracing backend
+✅ Distributed TraceId propagation between services
 ✅ Service identification for tracing
 
 The system currently demonstrates production-like distributed backend concepts.
@@ -318,30 +347,45 @@ The system currently demonstrates production-like distributed backend concepts.
 
 ## Observability improvements
 
-- Add local tracing visualization
-- Introduce OpenTelemetry Collector
-- Add Jaeger or another tracing backend
+Completed:
+
+* OpenTelemetry Collector integration
+* Jaeger trace visualization
+* Distributed tracing between services
+
+Future improvements:
+
+* Add custom business spans
+* Improve trace enrichment
+* Add metrics
+* Add dashboards
+
+---
 
 ## Messaging reliability
 
-- Implement Outbox Pattern
-- Improve transactional consistency between database changes and event publishing
+* Implement Outbox Pattern
+* Improve transactional consistency between database changes and event publishing
+
+---
 
 ## Advanced resilience
 
-- Timeout policies
-- Circuit breaker patterns
-- Fault handling strategies
+* Timeout policies
+* Circuit breaker patterns
+* Fault handling strategies
+
+---
 
 ## Kubernetes deployment
 
 Final deployment phase:
 
-- Container images
-- Kubernetes Deployments
-- Services (ClusterIP)
-- ConfigMaps
-- Secrets
-- Health checks
-- Local Kubernetes cluster
+* Container images
+* Kubernetes Deployments
+* Services (ClusterIP)
+* ConfigMaps
+* Secrets
+* Health checks
+* Local Kubernetes cluster
 

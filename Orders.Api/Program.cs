@@ -1,3 +1,4 @@
+using Orders.Api.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Orders.Api.Data;
 using Orders.Api.Endpoints;
@@ -47,6 +48,8 @@ builder.Services.AddOpenTelemetry()
                 options.ExportProcessorType = OpenTelemetry.ExportProcessorType.Simple;
             });
     });
+
+builder.Services.AddHostedService<OutboxPublisher>();
 
 var app = builder.Build();
 

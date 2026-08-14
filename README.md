@@ -65,6 +65,109 @@ Jaeger
 * Jaeger
 
 ---
+# 📦 Outbox Pattern
+
+The system uses the Transactional Outbox Pattern to improve consistency between database persistence and event publishing.
+
+Without an Outbox, the following sequence could lead to an inconsistent state:
+
+```text
+Database
+   |
+   | Order saved
+   |
+   X Application failure
+   |
+RabbitMQ
+   |
+   | Event never published
+```
+
+The current implementation persists the order and the corresponding event in the same database operation:
+
+```text
+Orders.Api
+     |
+     ▼
+PostgreSQL
+┌──────────────────────┐
+│ Order                │
+│ OutboxMessage        │
+└──────────┬───────────┘
+           |
+           | SaveChangesAsync()
+           |
+           ▼
+       Transaction
+```
+
+A background publisher periodically reads pending messages from the `OutboxMessages` table and publishes them through MassTransit:
+
+```text
+OutboxMessages
+      |
+      | ProcessedOnUtc IS NULL
+      ▼
+OutboxPublisher
+      |
+      ▼
+MassTransit
+      |
+      ▼
+RabbitMQ
+      |
+      ▼
+Billing.Service
+```
+
+After successful publication, the message is marked with `ProcessedOnUtc`.
+
+The Outbox Publisher runs as a hosted background service and polls for pending messages periodically.
+
+### Delivery semantics
+
+The Outbox Pattern does not provide exactly-once delivery.
+
+A failure can occur after the message has been published to RabbitMQ but before `ProcessedOnUtc` is persisted:
+
+```text
+Publish to RabbitMQ
+       |
+       | success
+       ▼
+Application failure
+       |
+       X
+ProcessedOnUtc not updated
+```
+
+The message may therefore be published again after recovery.
+
+For this reason, the consumer remains idempotent.
+
+This gives the system the following reliability model:
+
+```text
+Outbox
+   |
+   | prevents event loss
+   ▼
+RabbitMQ
+   |
+   | at-least-once delivery
+   ▼
+Billing.Service
+   |
+   | idempotent processing
+   ▼
+ProcessedMessages
+```
+
+This design favors reliable delivery and recovery over exactly-once processing.
+
+---
+
+
 
 # 🧠 Key Concepts Implemented
 
@@ -338,10 +441,13 @@ Implemented:
 ✅ Jaeger tracing backend
 ✅ Distributed TraceId propagation between services
 ✅ Service identification for tracing
+✅ Transactional Outbox Pattern
+✅ Background Outbox Publisher
 
 The system currently demonstrates production-like distributed backend concepts.
 
 ---
+
 
 # 📌 Next Steps
 

@@ -4,23 +4,18 @@
 
 This project simulates a production-like distributed backend system using .NET and messaging.
 
-It is designed to demonstrate real backend engineering concepts:
+It is designed to demonstrate practical backend engineering concepts:
 
 * Event-driven architecture
 * At-least-once delivery
 * Idempotency
-* Retry and resilience strategies
+* Retry and failure handling
 * Dead Letter Queue (DLQ)
 * Distributed observability and tracing
 * Cloud-native deployment concepts
 
-The goal is not complexity, but a clear understanding of distributed systems behavior.
+The goal is not complexity, but a clear understanding of distributed systems behavior and the challenges of building reliable services that communicate asynchronously.
 
-The project focuses on backend engineering challenges:
-
-> Building reliable services that communicate asynchronously in a distributed environment.
-
----
 
 # 🧱 Architecture
 
@@ -178,7 +173,8 @@ Implemented using MassTransit and RabbitMQ.
 Flow:
 
 * `Orders.Api` creates orders
-* `Orders.Api` publishes `OrderCreated` events
+* `Orders.Api` stores `OrderCreated` events in the Transactional Outbox
+* The Outbox Publisher publishes events to RabbitMQ
 * `Billing.Service` consumes events asynchronously
 
 Services are decoupled through messaging.
@@ -213,7 +209,7 @@ OrderId uniqueness
 ProcessedMessages persistence
 ```
 
-This guarantees safe message reprocessing.
+This allows duplicate messages to be detected and safely ignored.
 
 ---
 
@@ -426,72 +422,48 @@ Docker Compose
 
 # 🚀 Current Status
 
+The core distributed backend is implemented and validated locally.
+
 Implemented:
 
-✅ Event-driven architecture
-✅ RabbitMQ messaging
-✅ MassTransit integration
-✅ PostgreSQL persistence
-✅ Idempotent consumer
-✅ Retry policy
-✅ Dead Letter Queue
-✅ CorrelationId propagation
-✅ OpenTelemetry integration
-✅ OpenTelemetry Collector integration
-✅ Jaeger tracing backend
-✅ Distributed TraceId propagation between services
-✅ Service identification for tracing
-✅ Transactional Outbox Pattern
-✅ Background Outbox Publisher
+✅ Event-driven architecture  
+✅ RabbitMQ messaging  
+✅ MassTransit integration  
+✅ PostgreSQL persistence  
+✅ Idempotent consumer  
+✅ Retry policy  
+✅ Dead Letter Queue  
+✅ CorrelationId propagation  
+✅ OpenTelemetry integration  
+✅ OpenTelemetry Collector integration  
+✅ Jaeger tracing backend  
+✅ Distributed TraceId propagation between services  
+✅ Service identification for tracing  
+✅ Transactional Outbox Pattern  
+✅ Background Outbox Publisher  
+✅ Docker Compose local infrastructure  
+✅ End-to-end validation  
 
-The system currently demonstrates production-like distributed backend concepts.
+The system demonstrates the core reliability and observability mechanisms of a small distributed backend.
 
 ---
-
 
 # 📌 Next Steps
 
-## Observability improvements
+The application-level feature set is considered complete.
 
-Completed:
-
-* OpenTelemetry Collector integration
-* Jaeger trace visualization
-* Distributed tracing between services
-
-Future improvements:
-
-* Add custom business spans
-* Improve trace enrichment
-* Add metrics
-* Add dashboards
-
----
-
-## Messaging reliability
-
-* Implement Outbox Pattern
-* Improve transactional consistency between database changes and event publishing
-
----
-
-## Advanced resilience
-
-* Timeout policies
-* Circuit breaker patterns
-* Fault handling strategies
-
----
+The remaining phase is the deployment of the existing system to a local Kubernetes environment.
 
 ## Kubernetes deployment
 
-Final deployment phase:
+Planned:
 
 * Container images
 * Kubernetes Deployments
-* Services (ClusterIP)
+* Services (`ClusterIP`)
 * ConfigMaps
 * Secrets
-* Health checks
+* Liveness and readiness probes
 * Local Kubernetes cluster
+
 

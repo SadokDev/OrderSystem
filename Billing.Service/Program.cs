@@ -8,6 +8,13 @@ using OpenTelemetry.Trace;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+var rabbitMqHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+var rabbitMqUsername = builder.Configuration["RabbitMQ:Username"] ?? "";
+var rabbitMqPassword = builder.Configuration["RabbitMQ:Password"] ?? "";
+
+var otelEndpoint = builder.Configuration["OpenTelemetry:Endpoint"]
+                   ?? "http://localhost:4318/v1/traces";
+
 builder.Services.AddDbContext<BillingDbContext>(options =>
 {
     options.UseNpgsql(
@@ -20,10 +27,10 @@ builder.Services.AddMassTransit(x =>
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host("localhost", "/", h =>
+        cfg.Host(rabbitMqHost, "/", h =>
         {
-            h.Username("guest");
-            h.Password("guest");
+            h.Username(rabbitMqUsername);
+            h.Password(rabbitMqPassword);
         });
 
         cfg.UseMessageRetry(r =>
@@ -54,7 +61,7 @@ builder.Services.AddOpenTelemetry()
             .AddConsoleExporter()
             .AddOtlpExporter(options =>
             {
-                options.Endpoint = new Uri("http://localhost:4318/v1/traces");
+                options.Endpoint = new Uri(otelEndpoint);
                 options.Protocol = OtlpExportProtocol.HttpProtobuf;
                 options.ExportProcessorType = OpenTelemetry.ExportProcessorType.Simple;
             });

@@ -18,11 +18,11 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Orders.Api\Orders.Api.csproj" />
     <ProjectReference Include="..\OrderSystem.Contracts\OrderSystem.Contracts.csproj" />
   </ItemGroup>
 </Project>

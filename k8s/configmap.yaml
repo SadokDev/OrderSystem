@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ordersystem-config
+  namespace: ordersystem
+data:
+  RABBITMQ__HOST: rabbitmq
+  RABBITMQ__PORT: "5672"
+  OPENTELEMETRY__ENDPOINT: http://otel-collector:4318/v1/traces

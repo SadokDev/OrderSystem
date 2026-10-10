@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+  namespace: ordersystem
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing-service
+  template:
+    metadata:
+      labels:
+        app: billing-service
+    spec:
+      containers:
+        - name: billing-service
+          image: billing-service:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: ordersystem-config
+          env:
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ordersystem-secrets
+                  key: POSTGRES_USERNAME
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ordersystem-secrets
+                  key: POSTGRES_PASSWORD
+            - name: ConnectionStrings__BillingDb
+              value: "Host=postgres;Port=5432;Database=billing_db;Username=$(POSTGRES_USERNAME);Password=$(POSTGRES_PASSWORD)"
+            - name: RabbitMQ__Username
+              valueFrom:
+                secretKeyRef:
+                  name: ordersystem-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RabbitMQ__Password
+              valueFrom:
+                secretKeyRef:
+                  name: ordersystem-secrets
+                  key: RABBITMQ_PASSWORD

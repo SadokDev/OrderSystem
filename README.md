@@ -58,6 +58,9 @@ Jaeger
 * OpenTelemetry
 * OpenTelemetry Collector
 * Jaeger
+* Kubernetes
+* K3s
+* Colima
 
 ---
 # 📦 Outbox Pattern
@@ -442,28 +445,23 @@ Implemented:
 ✅ Transactional Outbox Pattern  
 ✅ Background Outbox Publisher  
 ✅ Docker Compose local infrastructure  
-✅ End-to-end validation  
+✅ Dockerized application services  
+✅ Kubernetes Deployments and ClusterIP Services  
+✅ Kubernetes ConfigMaps and Secrets  
+✅ Local Kubernetes deployment using Colima and K3s  
+✅ End-to-end order processing validated in Kubernetes  
+✅ Distributed traces verified in Jaeger  
 
 The system demonstrates the core reliability and observability mechanisms of a small distributed backend.
 
 ---
 
-# 📌 Next Steps
+# 📌 Project Status
 
-The application-level feature set is considered complete.
+The application and local Kubernetes deployment are complete.
 
-The remaining phase is the deployment of the existing system to a local Kubernetes environment.
+The system has been validated end-to-end using Docker Compose and Kubernetes (Colima/K3s), including order creation, transactional outbox publishing, asynchronous billing processing, and distributed tracing with Jaeger.
 
-## Kubernetes deployment
-
-Planned:
-
-* Container images
-* Kubernetes Deployments
-* Services (`ClusterIP`)
-* ConfigMaps
-* Secrets
-* Liveness and readiness probes
-* Local Kubernetes cluster
+No additional features are planned. The project is considered complete.
 
 
